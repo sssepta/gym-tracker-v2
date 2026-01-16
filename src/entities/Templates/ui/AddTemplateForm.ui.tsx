@@ -1,17 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Input from '../../../shared/ui/input/Input'
-import { useDispatch } from 'react-redux'
-import { addTemplate } from '../model/templatesSlice'
+import { useDispatch, useSelector } from 'react-redux'
+import { addTemplate, updateTemplate } from '../model/templatesSlice'
 import type { Exercise } from '../../exercise/model/types'
 import Button from '../../../shared/ui/button/Button'
 import CloseIcon from '../../../shared/ui/icons/close'
 import LowTabModal from '../../../shared/ui/lowTabModal/LowTabModal'
 import AddExerciseToTemplateForm from './AddExerciseToTemplateForm.ui'
+import { useLocation } from 'react-router'
+import { selectTemplates } from '../model/selector'
 
 export default function AddTemplateForm() {
-  const [nameTemplate, setNameTemplate] = useState('')
+  const { state } = useLocation()
+  const isEdit = !!state?.templateId
+  const templates = useSelector(selectTemplates)
+
+  const templateForEdit = isEdit ? templates.find((t) => t.id === state.templateId) : null
+
+  const [nameTemplate, setNameTemplate] = useState(templateForEdit?.name ?? '')
   const [AddExerciseFormIsVisible, setAddExerciseFormIsVisible] = useState(false)
-  const [exercises, setExercises] = useState<Exercise[]>([])
+  const [exercises, setExercises] = useState<Exercise[]>(templateForEdit?.exercises ?? [])
 
   const dispatch = useDispatch()
 
@@ -72,9 +80,19 @@ export default function AddTemplateForm() {
         <Button
           color="orange"
           onClick={() => {
-            dispatch(
-              addTemplate({ id: new Date().toString(), name: nameTemplate, exercises: exercises })
-            )
+            if (!isEdit) {
+              dispatch(
+                addTemplate({ id: new Date().toString(), name: nameTemplate, exercises: exercises })
+              )
+            } else {
+              dispatch(
+                updateTemplate({
+                  id: state.templateId,
+                  name: nameTemplate,
+                  exercises: exercises,
+                })
+              )
+            }
             setNameTemplate('')
             setExercises([])
           }}
